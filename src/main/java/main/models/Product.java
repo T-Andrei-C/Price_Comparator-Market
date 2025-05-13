@@ -1,5 +1,6 @@
 package main.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,6 +25,7 @@ public class Product {
     private Double quantity;
     private String unit;
 
+    @JsonBackReference
     @ManyToMany
     @JoinTable(
             name = "supermarket_products",
