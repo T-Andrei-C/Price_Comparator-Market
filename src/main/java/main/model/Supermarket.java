@@ -3,6 +3,7 @@ package main.model;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,6 +14,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Builder
 @Table(name = "supermarkets")
 public class Supermarket {
 
@@ -22,7 +24,7 @@ public class Supermarket {
 
     private String name;
     private LocalDate publish_date;
-    private Long product_price;
+    private Double product_price;
     private String currency;
 
     @JsonManagedReference
