@@ -1,5 +1,4 @@
-package main.models;
-
+package main.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
