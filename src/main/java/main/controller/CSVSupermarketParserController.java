@@ -13,10 +13,10 @@ import java.io.IOException;
 @RequestMapping("/price_comparator/api/v1/supermarket/csv")
 public class CSVSupermarketParserController {
 
-    private final CSVSupermarketParserService CSVParserService;
+    private final CSVSupermarketParserService CSVSupermarketParserService;
 
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
     public ResponseEntity<String> uploadCSVFiles (@RequestParam("file") MultipartFile file) throws IOException {
-        return ResponseEntity.ok(CSVParserService.uploadCSVFile(file));
+        return ResponseEntity.ok(CSVSupermarketParserService.uploadCSVFile(file));
     }
 }
