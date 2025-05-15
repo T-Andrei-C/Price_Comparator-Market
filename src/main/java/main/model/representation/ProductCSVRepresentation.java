@@ -3,6 +3,8 @@ package main.model.representation;
 import com.opencsv.bean.CsvBindByName;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @Builder
@@ -31,4 +33,7 @@ public class ProductCSVRepresentation {
     @CsvBindByName(column = "currency")
     private String currency;
 
+    private String supermarket_name;
+
+    private LocalDate publish_date;
 }
