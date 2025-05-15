@@ -1,4 +1,4 @@
-package main.respository;
+package main.repository;
 
 import main.model.Discount;
 import org.springframework.data.jpa.repository.JpaRepository;
