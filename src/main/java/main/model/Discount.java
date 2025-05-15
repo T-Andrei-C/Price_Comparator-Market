@@ -22,8 +22,7 @@ public class Discount {
 
     private LocalDate from_date;
     private LocalDate to_date;
-    private LocalDate publish_date;
-    private String percentage_of_discount;
+    private Double percentage_of_discount;
 
     @ManyToOne
     private Supermarket supermarket;
