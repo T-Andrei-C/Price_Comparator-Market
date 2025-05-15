@@ -6,8 +6,10 @@ import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import lombok.RequiredArgsConstructor;
 import main.helpers.CSVFileNameReader;
 import main.model.Supermarket;
+import main.model.SupermarketHistory;
 import main.model.representation.ProductCSVRepresentation;
-import main.respository.SupermarketRepository;
+import main.repository.SupermarketHistoryRepository;
+import main.repository.SupermarketRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 public class CSVSupermarketParserService {
 
     private final SupermarketRepository supermarketRepository;
+    private final SupermarketHistoryRepository supermarketHistoryRepository;
 
     public String uploadCSVFile(MultipartFile csvFile) throws IOException {
         try (Reader reader = new BufferedReader(new InputStreamReader(csvFile.getInputStream()))) {
@@ -75,9 +78,24 @@ public class CSVSupermarketParserService {
                         ) {
                             Supermarket updatedSupermarket = supermarketRepository.findById(tableSupermarket.getId()).orElse(null);
                             if (updatedSupermarket != null) {
+                                SupermarketHistory supermarketHistory = SupermarketHistory.builder()
+                                        .supermarket_name(updatedSupermarket.getSupermarket_name())
+                                        .product_name(updatedSupermarket.getProduct_name())
+                                        .brand(updatedSupermarket.getBrand())
+                                        .unit(updatedSupermarket.getUnit())
+                                        .category(updatedSupermarket.getCategory())
+                                        .quantity(updatedSupermarket.getQuantity())
+                                        .currency(updatedSupermarket.getCurrency())
+                                        .product_price(updatedSupermarket.getProduct_price())
+                                        .publish_date(updatedSupermarket.getPublish_date())
+                                        .build();
+
+                                supermarketHistoryRepository.save(supermarketHistory);
+
                                 updatedSupermarket.setProduct_price(supermarket.getProduct_price());
                                 updatedSupermarket.setPublish_date(supermarket.getPublish_date());
                                 supermarketRepository.save(updatedSupermarket);
+
                                 checkAfter = true;
                                 break;
                             }
