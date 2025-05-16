@@ -6,9 +6,11 @@ import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import lombok.RequiredArgsConstructor;
 import main.helpers.CSVFileNameReader;
 import main.model.Discount;
+import main.model.Product;
 import main.model.Supermarket;
 import main.model.representation.DiscountCSVRepresentation;
 import main.repository.DiscountRepository;
+import main.repository.ProductRepository;
 import main.repository.SupermarketRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +31,7 @@ public class CSVDiscountParserService {
 
     private final DiscountRepository discountRepository;
     private final SupermarketRepository supermarketRepository;
+    private final ProductRepository productRepository;
 
     public String uploadCSVFile(MultipartFile csvFile) throws IOException {
 
@@ -106,22 +109,23 @@ public class CSVDiscountParserService {
     }
 
     private Supermarket getSupermarketForDiscount(DiscountCSVRepresentation discountCSVRepresentation, String supermarketName) {
-        return supermarketRepository.findSupermarketByFields(
-                supermarketName,
+        Product product = productRepository.findProductByFields(
                 discountCSVRepresentation.getName(),
                 discountCSVRepresentation.getUnit(),
                 discountCSVRepresentation.getCategory(),
-                discountCSVRepresentation.getQuantity(),
-                discountCSVRepresentation.getBrand()
-        );
+                discountCSVRepresentation.getBrand(),
+                discountCSVRepresentation.getQuantity()
+        ).orElse(null);
+
+        return supermarketRepository.findSupermarketByFields(supermarketName, product);
     }
 
     private boolean checkSupermarketFieldsWithDiscountFields(DiscountCSVRepresentation discountCSVRepresentation, Supermarket supermarket, String supermarketName) {
-        return supermarket.getSupermarket_name().equals(supermarketName) &&
-                supermarket.getProduct_name().equals(discountCSVRepresentation.getName()) &&
-                supermarket.getBrand().equals(discountCSVRepresentation.getBrand()) &&
-                supermarket.getCategory().equals(discountCSVRepresentation.getCategory()) &&
-                supermarket.getQuantity().equals(discountCSVRepresentation.getQuantity()) &&
-                supermarket.getUnit().equals(discountCSVRepresentation.getUnit());
+        return supermarket.getName().equals(supermarketName) &&
+                supermarket.getProduct().getName().equals(discountCSVRepresentation.getName()) &&
+                supermarket.getProduct().getBrand().equals(discountCSVRepresentation.getBrand()) &&
+                supermarket.getProduct().getCategory().equals(discountCSVRepresentation.getCategory()) &&
+                supermarket.getProduct().getQuantity().equals(discountCSVRepresentation.getQuantity()) &&
+                supermarket.getProduct().getUnit().equals(discountCSVRepresentation.getUnit());
     }
 }

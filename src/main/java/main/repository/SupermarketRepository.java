@@ -15,9 +15,8 @@ public interface SupermarketRepository extends JpaRepository<Supermarket, Long> 
             "SELECT s " +
             "FROM Supermarket s " +
             "WHERE s.name = ?1 " +
-                    "AND s.currency = ?2 " +
-                    "AND s.product = ?3"
+                    "AND s.product = ?2"
     )
-    Supermarket findSupermarketByFields (String name, String currency, Product product);
+    Supermarket findSupermarketByFields (String name, Product product);
 
 }

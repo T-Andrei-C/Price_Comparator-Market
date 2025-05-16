@@ -138,7 +138,7 @@ public class CSVSupermarketAndProductParserService {
                         if (supermarket.getPublish_date().isEqual(tableSupermarket.getPublish_date())) {
                             if (!supermarket.getProduct_price().equals(tableSupermarket.getProduct_price())) {
 
-                                Supermarket currentSupermarket = supermarketRepository.findSupermarketByFields(supermarket.getName(), supermarket.getCurrency(), supermarket.getProduct());
+                                Supermarket currentSupermarket = supermarketRepository.findSupermarketByFields(supermarket.getName(), supermarket.getProduct());
                                 supermarketHistoryRepository.save(
                                         SupermarketHistory.builder()
                                                 .publish_date(currentSupermarket.getPublish_date())
@@ -156,7 +156,7 @@ public class CSVSupermarketAndProductParserService {
 
                         if (supermarket.getPublish_date().isAfter(tableSupermarket.getPublish_date())) {
 
-                            Supermarket currentSupermarket = supermarketRepository.findSupermarketByFields(supermarket.getName(), supermarket.getCurrency(), supermarket.getProduct());
+                            Supermarket currentSupermarket = supermarketRepository.findSupermarketByFields(supermarket.getName(), supermarket.getProduct());
                             supermarketHistoryRepository.save(
                                     SupermarketHistory.builder()
                                             .publish_date(currentSupermarket.getPublish_date())
