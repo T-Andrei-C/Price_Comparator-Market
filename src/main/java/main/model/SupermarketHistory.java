@@ -21,12 +21,10 @@ public class SupermarketHistory {
     private Long id;
 
     private String supermarket_name;
-    private String product_name;
-    private String category;
-    private String brand;
-    private Double quantity;
-    private String unit;
     private LocalDate publish_date;
     private Double product_price;
     private String currency;
+
+    @ManyToOne
+    private Product product;
 }
