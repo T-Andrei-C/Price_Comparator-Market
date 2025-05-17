@@ -142,8 +142,7 @@ public class CSVSupermarketAndProductParserService {
                                 supermarketHistoryRepository.save(
                                         SupermarketHistory.builder()
                                                 .publish_date(currentSupermarket.getPublish_date())
-                                                .product(currentSupermarket.getProduct())
-                                                .supermarket_name(currentSupermarket.getName())
+                                                .supermarket(currentSupermarket)
                                                 .currency(currentSupermarket.getCurrency())
                                                 .product_price(currentSupermarket.getProduct_price())
                                                 .build()
@@ -160,8 +159,7 @@ public class CSVSupermarketAndProductParserService {
                             supermarketHistoryRepository.save(
                                     SupermarketHistory.builder()
                                             .publish_date(currentSupermarket.getPublish_date())
-                                            .product(currentSupermarket.getProduct())
-                                            .supermarket_name(currentSupermarket.getName())
+                                            .supermarket(currentSupermarket)
                                             .currency(currentSupermarket.getCurrency())
                                             .product_price(currentSupermarket.getProduct_price())
                                             .build()
