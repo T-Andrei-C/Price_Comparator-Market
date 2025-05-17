@@ -2,10 +2,13 @@ package main.service;
 
 import lombok.RequiredArgsConstructor;
 import main.helpers.DiscountCalculator;
+import main.model.DTO.PriceHistoryDTO;
 import main.model.DTO.ProductHighestDiscountDTO;
+import main.model.DTO.ProductHistoryDTO;
 import main.model.Discount;
 import main.model.Product;
 import main.model.Supermarket;
+import main.model.SupermarketHistory;
 import main.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 
@@ -66,6 +69,98 @@ public class ProductService {
         return productsHighestDiscount;
     }
 
+    public Set<ProductHistoryDTO> getProductsPriceHistoryByBrand(String brand) {
+        List<Product> tableProducts = productRepository.findAll().stream()
+                .filter(product -> product.getBrand().equals(brand))
+                .toList();
+
+        return createProductHistoryForEachProduct(tableProducts);
+    }
+
+    public Set<ProductHistoryDTO> getProductsPriceHistoryBySupermarketName (String supermarketName) {
+        List<Product> tableProducts = productRepository.findAll().stream()
+                .filter(product -> product.getSupermarkets().stream()
+                        .anyMatch(supermarket -> supermarket.getName().equals(supermarketName))
+                ).peek(product -> product.getSupermarkets()
+                        .removeIf(supermarket -> !supermarket.getName().equals(supermarketName))
+                ).toList();
+
+        return createProductHistoryForEachProduct(tableProducts);
+    }
+
+    public Set<ProductHistoryDTO> getProductsPriceHistoryByCategory (String category) {
+        List<Product> tableProducts = productRepository.findAll().stream()
+                .filter(product -> product.getCategory().equals(category))
+                .toList();
+
+        return createProductHistoryForEachProduct(tableProducts);
+    }
+
+    private Set<ProductHistoryDTO> createProductHistoryForEachProduct(List<Product> tableProducts) {
+
+        Set<ProductHistoryDTO> productsHistory = new HashSet<>();
+
+        for (Product tableProduct : tableProducts) {
+            for (Supermarket supermarket : tableProduct.getSupermarkets()) {
+
+                ProductHistoryDTO productHistory = ProductHistoryDTO.builder()
+                        .product(tableProduct)
+                        .supermarket_name(supermarket.getName())
+                        .currency(supermarket.getCurrency())
+                        .price_history(new ArrayList<>())
+                        .build();
+
+                PriceHistoryDTO priceHistory =  PriceHistoryDTO.builder()
+                        .publish_date(supermarket.getPublish_date())
+                        .product_price(supermarket.getProduct_price())
+                        .discounted_price(supermarket.getProduct_price())
+                        .percentage_of_discount(0d)
+                        .had_discount(false)
+                        .is_current(true)
+                        .build();
+
+                for (Discount discount : filterDiscountsByDate(supermarket.getDiscounts(), supermarket.getPublish_date())) {
+
+                    priceHistory.setDiscounted_price(DiscountCalculator.applyDiscountToProductPrice(
+                            priceHistory.getDiscounted_price(), discount.getPercentage_of_discount()
+                    ));
+                    priceHistory.setHad_discount(true);
+                    priceHistory.setPercentage_of_discount(discount.getPercentage_of_discount());
+
+                }
+
+                productHistory.getPrice_history().add(priceHistory);
+
+                for (SupermarketHistory supermarketHistory : supermarket.getSupermarketHistories()) {
+                    priceHistory =  PriceHistoryDTO.builder()
+                            .publish_date(supermarketHistory.getPublish_date())
+                            .product_price(supermarketHistory.getProduct_price())
+                            .discounted_price(supermarketHistory.getProduct_price())
+                            .had_discount(false)
+                            .is_current(false)
+                            .build();
+
+                    for (Discount discount : filterDiscountsByDate(supermarket.getDiscounts(), supermarketHistory.getPublish_date())) {
+
+                        priceHistory.setDiscounted_price(DiscountCalculator.applyDiscountToProductPrice(
+                                priceHistory.getDiscounted_price(), discount.getPercentage_of_discount()
+                        ));
+                        priceHistory.setHad_discount(true);
+                        priceHistory.setPercentage_of_discount(discount.getPercentage_of_discount());
+
+                    }
+
+                    productHistory.getPrice_history().add(priceHistory);
+
+                }
+
+                productsHistory.add(productHistory);
+
+            }
+        }
+        return productsHistory;
+    }
+
     private Set<Discount> filterDiscountsByDate(Set<Discount> discounts, LocalDate simulateDate) {
         return discounts.stream()
                 .filter(discount ->
@@ -75,5 +170,4 @@ public class ProductService {
                                 simulateDate.isBefore(discount.getTo_date())
                 ).collect(Collectors.toSet());
     }
-
 }
