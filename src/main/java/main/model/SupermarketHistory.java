@@ -20,11 +20,10 @@ public class SupermarketHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String supermarket_name;
     private LocalDate publish_date;
     private Double product_price;
     private String currency;
 
     @ManyToOne
-    private Product product;
+    private Supermarket supermarket;
 }

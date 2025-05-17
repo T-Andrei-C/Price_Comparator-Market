@@ -1,5 +1,6 @@
 package main.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,11 +28,9 @@ public class Product {
     private Double quantity;
     private String unit;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "product")
     List<Supermarket> supermarkets;
-
-    @OneToMany(mappedBy = "product")
-    List<SupermarketHistory> supermarketHistories;
 
     @Override
     public boolean equals(Object o) {

@@ -33,6 +33,9 @@ public class Supermarket {
     @ManyToOne
     private Product product;
 
+    @OneToMany(mappedBy = "supermarket")
+    private Set<SupermarketHistory> supermarketHistories;
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
