@@ -2,6 +2,7 @@ package main.service;
 
 import lombok.RequiredArgsConstructor;
 import main.helpers.DiscountCalculator;
+import main.helpers.SimulateDate;
 import main.model.DTO.PriceHistoryDTO;
 import main.model.DTO.ProductHighestDiscountDTO;
 import main.model.DTO.ProductHistoryDTO;
@@ -27,7 +28,7 @@ public class ProductService {
 
     public Set<ProductHighestDiscountDTO> displayHighestDiscountForProducts() {
         List<Product> products = productRepository.findAll();
-        LocalDate simulateDate = LocalDate.parse("2025-05-02");
+        LocalDate simulateDate = SimulateDate.getDate();
         Set<ProductHighestDiscountDTO> productsHighestDiscount = new HashSet<>();
 
         for (Product product : products) {

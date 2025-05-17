@@ -2,6 +2,7 @@ package main.service;
 
 import lombok.RequiredArgsConstructor;
 import main.helpers.DiscountCalculator;
+import main.helpers.SimulateDate;
 import main.model.DTO.ProductHighestDiscountDTO;
 import main.model.Discount;
 import main.model.Product;
@@ -22,7 +23,7 @@ public class DiscountService {
 
     public Set<ProductHighestDiscountDTO> getNewestDiscounts () {
         Set<ProductHighestDiscountDTO> newestDiscounts = new HashSet<>();
-        LocalDate simulateDate = LocalDate.parse("2025-05-01");
+        LocalDate simulateDate = SimulateDate.getDate();
 
         Set<Discount> discounts = discountRepository.findAll().stream()
                 .filter(discount -> discount.getFrom_date().isEqual(simulateDate))
