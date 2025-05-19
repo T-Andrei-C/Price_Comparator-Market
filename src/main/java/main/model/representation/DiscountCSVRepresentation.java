@@ -1,31 +1,18 @@
 package main.model.representation;
 
 import com.opencsv.bean.CsvBindByName;
-import lombok.*;
-import org.springframework.cglib.core.Local;
-
-import java.time.LocalDate;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
-public class DiscountCSVRepresentation {
-    @CsvBindByName(column = "product_name")
-    private String name;
-
-    @CsvBindByName(column = "product_category")
-    private String category;
-
-    @CsvBindByName(column = "brand")
-    private String brand;
-
-    @CsvBindByName(column = "package_quantity")
-    private Double quantity;
-
-    @CsvBindByName(column = "package_unit")
-    private String unit;
+public class DiscountCSVRepresentation extends ProductRepresentation{
 
     @CsvBindByName(column = "percentage_of_discount")
     private Double percentage_of_discount;

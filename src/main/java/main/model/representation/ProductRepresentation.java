@@ -1,16 +1,18 @@
 package main.model.representation;
 
 import com.opencsv.bean.CsvBindByName;
-import lombok.*;
-
-import java.time.LocalDate;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductCSVRepresentation {
+public class ProductRepresentation {
 
     @CsvBindByName(column = "product_name")
     private String name;
@@ -27,13 +29,4 @@ public class ProductCSVRepresentation {
     @CsvBindByName(column = "package_unit")
     private String unit;
 
-    @CsvBindByName(column = "price")
-    private Double price;
-
-    @CsvBindByName(column = "currency")
-    private String currency;
-
-    private String supermarket_name;
-
-    private LocalDate publish_date;
 }
