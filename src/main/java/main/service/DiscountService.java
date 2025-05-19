@@ -31,20 +31,15 @@ public class DiscountService {
 
         for (Discount discount : discounts) {
             Supermarket discountSupermarket = discount.getSupermarket();
-            Product discountProduct = discountSupermarket.getProduct();
 
             newestDiscounts.add(
                     ProductHighestDiscountDTO.builder()
-                            .product_name(discountProduct.getName())
+                            .product(discountSupermarket.getProduct())
                             .supermarket_name(discountSupermarket.getName())
                             .product_price(discountSupermarket.getProduct_price())
                             .percentage_of_discount(discount.getPercentage_of_discount())
                             .product_price_with_discount(DiscountCalculator.applyDiscountToProductPrice(discountSupermarket.getProduct_price(), discount.getPercentage_of_discount()))
-                            .brand(discountProduct.getBrand())
-                            .category(discountProduct.getCategory())
                             .currency(discountSupermarket.getCurrency())
-                            .category(discountProduct.getCategory())
-                            .quantity(discountProduct.getQuantity())
                             .build()
             );
         }

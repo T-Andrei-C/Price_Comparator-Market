@@ -53,15 +53,12 @@ public class ProductService {
             for (Discount highestDiscount : highestDiscounts) {
                 productsHighestDiscount.add(
                         ProductHighestDiscountDTO.builder()
-                                .product_name(product.getName())
+                                .product(product)
                                 .supermarket_name(highestDiscount.getSupermarket().getName())
                                 .product_price(highestDiscount.getSupermarket().getProduct_price())
                                 .percentage_of_discount(highestDiscount.getPercentage_of_discount())
                                 .product_price_with_discount(DiscountCalculator.applyDiscountToProductPrice(highestDiscount.getSupermarket().getProduct_price(), highestDiscount.getPercentage_of_discount()))
-                                .brand(product.getBrand())
-                                .category(product.getCategory())
                                 .currency(highestDiscount.getSupermarket().getCurrency())
-                                .quantity(product.getQuantity())
                                 .build()
                 );
             }
