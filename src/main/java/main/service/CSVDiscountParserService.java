@@ -6,9 +6,11 @@ import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import lombok.RequiredArgsConstructor;
 import main.helpers.CSVFileNameReader;
 import main.model.Discount;
+import main.model.DiscountHistory;
 import main.model.Product;
 import main.model.Supermarket;
 import main.model.representation.DiscountCSVRepresentation;
+import main.repository.DiscountHistoryRepository;
 import main.repository.DiscountRepository;
 import main.repository.ProductRepository;
 import main.repository.SupermarketRepository;
@@ -32,6 +34,7 @@ public class CSVDiscountParserService {
     private final DiscountRepository discountRepository;
     private final SupermarketRepository supermarketRepository;
     private final ProductRepository productRepository;
+    private final DiscountHistoryRepository discountHistoryRepository;
 
     public String uploadCSVFile(MultipartFile csvFile) throws IOException {
 
@@ -68,27 +71,73 @@ public class CSVDiscountParserService {
 
     private Set<Discount> checkIfDiscountsInTable(Set<Discount> discounts) {
         List<Discount> tableDiscounts = discountRepository.findAll();
+
         if (!tableDiscounts.isEmpty()) {
             Set<Discount> newDiscounts = new HashSet<>();
+
             for (Discount discount : discounts) {
-                boolean afterCheck = false;
-                for (Discount tableDiscount : tableDiscounts) {
-                    if (discount.getSupermarket().getId().equals(tableDiscount.getSupermarket().getId())){
-                        if (discount.getFrom_date().isEqual(tableDiscount.getFrom_date()) && discount.getTo_date().isEqual(tableDiscount.getTo_date())) {
-                            Discount newDiscount = discountRepository.findById(tableDiscount.getId()).orElse(null);
-                            if (newDiscount != null) {
-                                newDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
-                                discountRepository.save(newDiscount);
-                                afterCheck = true;
-                                break;
-                            }
+                if (discount.getSupermarket().getDiscount() != null) {
+                    Discount tableDiscount = discountRepository.findById(discount.getSupermarket().getDiscount().getId()).orElse(null);
+
+                    if (tableDiscount != null) {
+
+                        if (discount.getFrom_date().isEqual(tableDiscount.getFrom_date()) ||
+                                discount.getFrom_date().isBefore(tableDiscount.getFrom_date())
+                        ) {
+                            tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
+                            tableDiscount.setFrom_date(discount.getFrom_date());
+                            tableDiscount.setTo_date(discount.getTo_date());
+
+                            discountRepository.save(tableDiscount);
                         }
+
+                        if (discount.getFrom_date().isAfter(tableDiscount.getTo_date())) {
+                            DiscountHistory discountHistory = DiscountHistory.builder()
+                                    .supermarket(tableDiscount.getSupermarket())
+                                    .from_date(tableDiscount.getFrom_date())
+                                    .to_date(tableDiscount.getTo_date())
+                                    .percentage_of_discount(tableDiscount.getPercentage_of_discount())
+                                    .build();
+
+                            removeOrUpdateDiscountHistoryFromTable(discountHistory);
+
+                            tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
+                            tableDiscount.setFrom_date(discount.getFrom_date());
+                            tableDiscount.setTo_date(discount.getTo_date());
+
+                            discountRepository.save(tableDiscount);
+                            discountHistoryRepository.save(discountHistory);
+                        }
+
+                        if (discount.getFrom_date().isAfter(tableDiscount.getFrom_date()) &&
+                                discount.getFrom_date().isBefore(tableDiscount.getTo_date())
+                        ) {
+
+                            DiscountHistory discountHistory = DiscountHistory.builder()
+                                    .supermarket(tableDiscount.getSupermarket())
+                                    .from_date(tableDiscount.getFrom_date())
+                                    .to_date(discount.getFrom_date())
+                                    .percentage_of_discount(tableDiscount.getPercentage_of_discount())
+                                    .build();
+
+                            removeOrUpdateDiscountHistoryFromTable(discountHistory);
+
+                            tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
+                            tableDiscount.setFrom_date(discount.getFrom_date());
+                            tableDiscount.setTo_date(discount.getTo_date());
+
+                            discountRepository.save(tableDiscount);
+                            discountHistoryRepository.save(discountHistory);
+                        }
+
+                    } else {
+                        newDiscounts.add(discount);
                     }
-                }
-                if (!afterCheck) {
+                } else {
                     newDiscounts.add(discount);
                 }
             }
+
             return newDiscounts;
         }
         return discounts;
@@ -127,5 +176,31 @@ public class CSVDiscountParserService {
                 supermarket.getProduct().getCategory().equals(discountCSVRepresentation.getCategory()) &&
                 supermarket.getProduct().getQuantity().equals(discountCSVRepresentation.getQuantity()) &&
                 supermarket.getProduct().getUnit().equals(discountCSVRepresentation.getUnit());
+    }
+
+    private void removeOrUpdateDiscountHistoryFromTable(DiscountHistory discountHistory) {
+        List<DiscountHistory> discountHistoriesToRemove = discountHistoryRepository
+                .findDiscountsHistoryToRemoveByFields(
+                        discountHistory.getFrom_date(),
+                        discountHistory.getTo_date(),
+                        discountHistory.getSupermarket()
+                );
+        List<DiscountHistory> discountHistoriesToUpdate = discountHistoryRepository
+                .findDiscountsHistoryToUpdateByFields(
+                        discountHistory.getFrom_date(),
+                        discountHistory.getTo_date(),
+                        discountHistory.getSupermarket()
+                );
+
+        if (!discountHistoriesToRemove.isEmpty()) {
+            discountHistoryRepository.deleteAll(discountHistoriesToRemove);
+        }
+
+        if (!discountHistoriesToUpdate.isEmpty()) {
+            for (DiscountHistory discountHistoryToUpdate : discountHistoriesToUpdate) {
+                discountHistoryToUpdate.setTo_date(discountHistory.getTo_date());
+                discountHistoryRepository.save(discountHistoryToUpdate);
+            }
+        }
     }
 }
