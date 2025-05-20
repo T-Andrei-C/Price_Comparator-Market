@@ -7,15 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.Objects;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Builder
-@Table(name = "discounts")
-public class Discount {
+@Table(name = "discounts_history")
+public class DiscountHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,18 +24,7 @@ public class Discount {
     private LocalDate to_date;
     private Double percentage_of_discount;
 
-    @OneToOne
+    @ManyToOne
     private Supermarket supermarket;
 
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        Discount discount = (Discount) o;
-        return Objects.equals(supermarket, discount.supermarket);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(supermarket);
-    }
 }
