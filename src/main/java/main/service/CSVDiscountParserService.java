@@ -81,17 +81,10 @@ public class CSVDiscountParserService {
 
                     if (tableDiscount != null) {
 
-                        if (discount.getFrom_date().isEqual(tableDiscount.getFrom_date()) ||
-                                discount.getFrom_date().isBefore(tableDiscount.getFrom_date())
+                        if (tableDiscount.getFrom_date().isBefore(discount.getFrom_date()) &&
+                                (tableDiscount.getTo_date().isBefore(discount.getFrom_date()) ||
+                                tableDiscount.getTo_date().isEqual(discount.getFrom_date()))
                         ) {
-                            tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
-                            tableDiscount.setFrom_date(discount.getFrom_date());
-                            tableDiscount.setTo_date(discount.getTo_date());
-
-                            discountRepository.save(tableDiscount);
-                        }
-
-                        if (discount.getFrom_date().isAfter(tableDiscount.getTo_date())) {
                             DiscountHistory discountHistory = DiscountHistory.builder()
                                     .supermarket(tableDiscount.getSupermarket())
                                     .from_date(tableDiscount.getFrom_date())
@@ -99,20 +92,18 @@ public class CSVDiscountParserService {
                                     .percentage_of_discount(tableDiscount.getPercentage_of_discount())
                                     .build();
 
-                            removeOrUpdateDiscountHistoryFromTable(discountHistory);
-
                             tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
                             tableDiscount.setFrom_date(discount.getFrom_date());
                             tableDiscount.setTo_date(discount.getTo_date());
 
                             discountRepository.save(tableDiscount);
                             discountHistoryRepository.save(discountHistory);
-                        }
-
-                        if (discount.getFrom_date().isAfter(tableDiscount.getFrom_date()) &&
-                                discount.getFrom_date().isBefore(tableDiscount.getTo_date())
+                        } else if (tableDiscount.getFrom_date().isBefore(discount.getFrom_date()) &&
+                                tableDiscount.getTo_date().isAfter(discount.getFrom_date()) &&
+                                (tableDiscount.getTo_date().isBefore(discount.getTo_date()) ||
+                                tableDiscount.getTo_date().isAfter(discount.getTo_date()) ||
+                                tableDiscount.getTo_date().isEqual(discount.getTo_date()))
                         ) {
-
                             DiscountHistory discountHistory = DiscountHistory.builder()
                                     .supermarket(tableDiscount.getSupermarket())
                                     .from_date(tableDiscount.getFrom_date())
@@ -120,14 +111,18 @@ public class CSVDiscountParserService {
                                     .percentage_of_discount(tableDiscount.getPercentage_of_discount())
                                     .build();
 
-                            removeOrUpdateDiscountHistoryFromTable(discountHistory);
-
                             tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
                             tableDiscount.setFrom_date(discount.getFrom_date());
                             tableDiscount.setTo_date(discount.getTo_date());
 
                             discountRepository.save(tableDiscount);
                             discountHistoryRepository.save(discountHistory);
+                        } else {
+                            tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
+                            tableDiscount.setFrom_date(discount.getFrom_date());
+                            tableDiscount.setTo_date(discount.getTo_date());
+
+                            discountRepository.save(tableDiscount);
                         }
 
                     } else {
@@ -178,29 +173,4 @@ public class CSVDiscountParserService {
                 supermarket.getProduct().getUnit().equals(discountCSVRepresentation.getUnit());
     }
 
-    private void removeOrUpdateDiscountHistoryFromTable(DiscountHistory discountHistory) {
-        List<DiscountHistory> discountHistoriesToRemove = discountHistoryRepository
-                .findDiscountsHistoryToRemoveByFields(
-                        discountHistory.getFrom_date(),
-                        discountHistory.getTo_date(),
-                        discountHistory.getSupermarket()
-                );
-        List<DiscountHistory> discountHistoriesToUpdate = discountHistoryRepository
-                .findDiscountsHistoryToUpdateByFields(
-                        discountHistory.getFrom_date(),
-                        discountHistory.getTo_date(),
-                        discountHistory.getSupermarket()
-                );
-
-        if (!discountHistoriesToRemove.isEmpty()) {
-            discountHistoryRepository.deleteAll(discountHistoriesToRemove);
-        }
-
-        if (!discountHistoriesToUpdate.isEmpty()) {
-            for (DiscountHistory discountHistoryToUpdate : discountHistoriesToUpdate) {
-                discountHistoryToUpdate.setTo_date(discountHistory.getTo_date());
-                discountHistoryRepository.save(discountHistoryToUpdate);
-            }
-        }
-    }
 }
