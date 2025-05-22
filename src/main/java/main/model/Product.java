@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import main.model.user.TargetProduct;
 
 import java.util.List;
 import java.util.Objects;
@@ -30,7 +31,11 @@ public class Product {
 
     @JsonIgnore
     @OneToMany(mappedBy = "product")
-    List<Supermarket> supermarkets;
+    private List<Supermarket> supermarkets;
+
+    @JsonIgnore
+    @OneToOne(mappedBy = "product")
+    private TargetProduct targetProduct;
 
     @Override
     public boolean equals(Object o) {
