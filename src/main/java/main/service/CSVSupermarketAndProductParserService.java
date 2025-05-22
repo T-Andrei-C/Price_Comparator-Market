@@ -5,13 +5,17 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import lombok.RequiredArgsConstructor;
 import main.helpers.CSVFileNameReader;
+import main.helpers.DiscountCalculator;
+import main.helpers.SimulateDate;
+import main.model.Discount;
 import main.model.Product;
 import main.model.Supermarket;
 import main.model.SupermarketHistory;
-import main.model.representation.ProductCSVRepresentation;
-import main.repository.ProductRepository;
-import main.repository.SupermarketHistoryRepository;
-import main.repository.SupermarketRepository;
+import main.model.representation.SupermarketCSVRepresentation;
+import main.model.user.Notification;
+import main.model.user.TargetProduct;
+import main.model.user.User;
+import main.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +23,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,14 +37,17 @@ public class CSVSupermarketAndProductParserService {
     private final ProductRepository productRepository;
     private final SupermarketRepository supermarketRepository;
     private final SupermarketHistoryRepository supermarketHistoryRepository;
+    private final UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
+    private final TargetProductRepository targetProductRepository;
 
     public String uploadCSVFile(MultipartFile csvFile) throws IOException {
         try (Reader reader = new BufferedReader(new InputStreamReader(csvFile.getInputStream()))) {
 
-            HeaderColumnNameMappingStrategy<ProductCSVRepresentation> strategy = new HeaderColumnNameMappingStrategy<>();
-            strategy.setType(ProductCSVRepresentation.class);
+            HeaderColumnNameMappingStrategy<SupermarketCSVRepresentation> strategy = new HeaderColumnNameMappingStrategy<>();
+            strategy.setType(SupermarketCSVRepresentation.class);
 
-            CsvToBean<ProductCSVRepresentation> csvToBean = new CsvToBeanBuilder<ProductCSVRepresentation>(reader)
+            CsvToBean<SupermarketCSVRepresentation> csvToBean = new CsvToBeanBuilder<SupermarketCSVRepresentation>(reader)
                     .withSeparator(';')
                     .withMappingStrategy(strategy)
                     .withIgnoreLeadingWhiteSpace(true)
@@ -47,11 +56,12 @@ public class CSVSupermarketAndProductParserService {
 
             String csvFileName = csvFile.getOriginalFilename();
 
-            Set<ProductCSVRepresentation> productsRepresentation = csvToBean.parse()
+            Set<SupermarketCSVRepresentation> productsRepresentation = csvToBean.parse()
                     .stream()
-                    .map(products -> ProductCSVRepresentation.builder()
+                    .map(products -> SupermarketCSVRepresentation.builder()
                             .price(products.getPrice())
                             .publish_date(CSVFileNameReader.getPublishDateName(csvFileName))
+
                             .name(products.getName())
                             .supermarket_name(CSVFileNameReader.getSupermarketName(csvFileName))
                             .unit(products.getUnit())
@@ -64,20 +74,22 @@ public class CSVSupermarketAndProductParserService {
 
             productRepository.saveAll(testProductsUpload(productsRepresentation));
             supermarketRepository.saveAll(testSupermarketUpload(productsRepresentation));
+            createNotificationIfPriceDroppedForTargetProduct();
+
         }
         return "";
     }
 
-    private Set<Product> testProductsUpload (Set<ProductCSVRepresentation> productCSVRepresentations) {
+    private Set<Product> testProductsUpload(Set<SupermarketCSVRepresentation> supermarketCSVRepresentations) {
         Set<Product> products = new HashSet<>();
 
-        for (ProductCSVRepresentation productCSVRepresentation : productCSVRepresentations) {
+        for (SupermarketCSVRepresentation supermarketCSVRepresentation : supermarketCSVRepresentations) {
             products.add(Product.builder()
-                    .name(productCSVRepresentation.getName())
-                    .unit(productCSVRepresentation.getUnit())
-                    .quantity(productCSVRepresentation.getQuantity())
-                    .brand(productCSVRepresentation.getBrand())
-                    .category(productCSVRepresentation.getCategory())
+                    .name(supermarketCSVRepresentation.getName())
+                    .unit(supermarketCSVRepresentation.getUnit())
+                    .quantity(supermarketCSVRepresentation.getQuantity())
+                    .brand(supermarketCSVRepresentation.getBrand())
+                    .category(supermarketCSVRepresentation.getCategory())
                     .build());
         }
 
@@ -104,23 +116,23 @@ public class CSVSupermarketAndProductParserService {
         return products;
     }
 
-    private Set<Supermarket> testSupermarketUpload (Set<ProductCSVRepresentation> productCSVRepresentations) {
+    private Set<Supermarket> testSupermarketUpload(Set<SupermarketCSVRepresentation> supermarketCSVRepresentations) {
         Set<Supermarket> supermarkets = new HashSet<>();
 
-        for (ProductCSVRepresentation productCSVRepresentation : productCSVRepresentations) {
+        for (SupermarketCSVRepresentation supermarketCSVRepresentation : supermarketCSVRepresentations) {
             Product product = getProduct(
-                    productCSVRepresentation.getName(),
-                    productCSVRepresentation.getUnit(),
-                    productCSVRepresentation.getCategory(),
-                    productCSVRepresentation.getBrand(),
-                    productCSVRepresentation.getQuantity()
+                    supermarketCSVRepresentation.getName(),
+                    supermarketCSVRepresentation.getUnit(),
+                    supermarketCSVRepresentation.getCategory(),
+                    supermarketCSVRepresentation.getBrand(),
+                    supermarketCSVRepresentation.getQuantity()
             );
 
             supermarkets.add(Supermarket.builder()
-                    .product_price(productCSVRepresentation.getPrice())
-                    .name(productCSVRepresentation.getSupermarket_name())
-                    .publish_date(productCSVRepresentation.getPublish_date())
-                    .currency(productCSVRepresentation.getCurrency())
+                    .product_price(supermarketCSVRepresentation.getPrice())
+                    .name(supermarketCSVRepresentation.getSupermarket_name())
+                    .publish_date(supermarketCSVRepresentation.getPublish_date())
+                    .currency(supermarketCSVRepresentation.getCurrency())
                     .product(product)
                     .build());
 
@@ -135,26 +147,8 @@ public class CSVSupermarketAndProductParserService {
                 boolean afterCheck = false;
                 for (Supermarket tableSupermarket : tableSupermarkets) {
                     if (supermarket.equals(tableSupermarket)) {
-                        if (supermarket.getPublish_date().isEqual(tableSupermarket.getPublish_date())) {
-                            if (!supermarket.getProduct_price().equals(tableSupermarket.getProduct_price())) {
-
-                                Supermarket currentSupermarket = supermarketRepository.findSupermarketByFields(supermarket.getName(), supermarket.getProduct());
-                                supermarketHistoryRepository.save(
-                                        SupermarketHistory.builder()
-                                                .publish_date(currentSupermarket.getPublish_date())
-                                                .supermarket(currentSupermarket)
-                                                .currency(currentSupermarket.getCurrency())
-                                                .product_price(currentSupermarket.getProduct_price())
-                                                .build()
-                                );
-
-                                currentSupermarket.setProduct_price(supermarket.getProduct_price());
-                                supermarketRepository.save(currentSupermarket);
-                            }
-                        }
 
                         if (supermarket.getPublish_date().isAfter(tableSupermarket.getPublish_date())) {
-
                             Supermarket currentSupermarket = supermarketRepository.findSupermarketByFields(supermarket.getName(), supermarket.getProduct());
                             supermarketHistoryRepository.save(
                                     SupermarketHistory.builder()
@@ -164,12 +158,15 @@ public class CSVSupermarketAndProductParserService {
                                             .product_price(currentSupermarket.getProduct_price())
                                             .build()
                             );
+
+                            currentSupermarket.setProduct_price(supermarket.getProduct_price());
                             currentSupermarket.setPublish_date(supermarket.getPublish_date());
+                            supermarketRepository.save(currentSupermarket);
+                        }
 
-                            if (!supermarket.getProduct_price().equals(tableSupermarket.getProduct_price())) {
-                                currentSupermarket.setProduct_price(supermarket.getProduct_price());
-                            }
-
+                        if (supermarket.getPublish_date().isEqual(tableSupermarket.getPublish_date())) {
+                            Supermarket currentSupermarket = supermarketRepository.findSupermarketByFields(supermarket.getName(), supermarket.getProduct());
+                            currentSupermarket.setProduct_price(supermarket.getProduct_price());
                             supermarketRepository.save(currentSupermarket);
                         }
 
@@ -191,8 +188,70 @@ public class CSVSupermarketAndProductParserService {
         return supermarkets;
     }
 
-    private Product getProduct (String name, String unit, String category, String brand, Double quantity) {
+    private Product getProduct(String name, String unit, String category, String brand, Double quantity) {
         return productRepository.findProductByFields(name, unit, category, brand, quantity).orElse(null);
     }
 
+    private void createNotificationIfPriceDroppedForTargetProduct() {
+        List<Supermarket> supermarkets = supermarketRepository.findAll();
+        List<User> users = userRepository.findAll();
+        List<TargetProduct> targetProductsToRemove = new ArrayList<>();
+        LocalDate simulateDate = SimulateDate.getDate();
+
+        for (User user : users) {
+            if (user.getTargetProduct() != null) {
+
+                TargetProduct targetProduct = targetProductRepository.findById(user.getTargetProduct().getId()).orElse(null);
+
+                for (Supermarket supermarket : supermarkets) {
+                    if (user.getTargetProduct().getProduct().equals(supermarket.getProduct())) {
+                        Discount discount = supermarket.getDiscount();
+
+                        if ((simulateDate.isEqual(discount.getFrom_date()) || simulateDate.isAfter(discount.getFrom_date())) &&
+                                (simulateDate.isEqual(discount.getTo_date()) || simulateDate.isBefore(discount.getTo_date()))
+                        ) {
+                            double discountPrice = DiscountCalculator.applyDiscountToProductPrice(supermarket.getProduct_price(), discount.getPercentage_of_discount());
+                            if (user.getTargetProduct().getExpectedPrice() >= discountPrice) {
+                                Notification notification = Notification.builder()
+                                        .message(
+                                                "Product " +
+                                                        user.getTargetProduct().getProduct().getName() +
+                                                        " from the target product is below or equal to the target price in the supermarket " +
+                                                        supermarket.getName() +
+                                                        " with a price of " +
+                                                        discountPrice
+                                        )
+                                        .user(user)
+                                        .seen(false)
+                                        .build();
+
+                                notificationRepository.save(notification);
+                                targetProductRepository.deleteById(targetProduct.getId());
+                                break;
+                            }
+                        } else {
+                            if (user.getTargetProduct().getExpectedPrice() >= supermarket.getProduct_price()) {
+                                Notification notification = Notification.builder()
+                                        .message(
+                                                "Product " +
+                                                        user.getTargetProduct().getProduct().getName() +
+                                                        " from the target product is below or equal to the target price in the supermarket " +
+                                                        supermarket.getName() +
+                                                        " with a price of " +
+                                                        supermarket.getProduct_price()
+                                        )
+                                        .user(user)
+                                        .seen(false)
+                                        .build();
+
+                                notificationRepository.save(notification);
+                                targetProductRepository.removeById(targetProduct.getId());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
