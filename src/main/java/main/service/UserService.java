@@ -37,6 +37,7 @@ public class UserService {
     public String addTargetProductToUser(String email, TargetProduct targetProduct) {
         User user = userRepository.findUserByEmail(email).orElse(null);
         Product product = productRepository.findById(targetProduct.getProduct().getId()).orElse(null);
+        TargetProduct userTargetProduct = targetProductRepository.getTargetProductByUser(user).orElse(null);
 
         if (product == null) {
             return "Product with id " + targetProduct.getProduct().getId() + " does not exist";
@@ -47,21 +48,17 @@ public class UserService {
         }
 
         if (user != null) {
-            if (user.getTargetProduct() == null) {
+            if (userTargetProduct == null) {
                 targetProduct.setUser(user);
                 targetProductRepository.save(targetProduct);
 
                 return "Target product added successfully";
             } else {
-                TargetProduct userTargetProduct = targetProductRepository.findById(user.getTargetProduct().getId()).orElse(null);
+                userTargetProduct.setProduct(targetProduct.getProduct());
+                userTargetProduct.setExpectedPrice(targetProduct.getExpectedPrice());
+                targetProductRepository.save(userTargetProduct);
 
-                if (userTargetProduct != null) {
-                    userTargetProduct.setProduct(targetProduct.getProduct());
-                    userTargetProduct.setExpectedPrice(targetProduct.getExpectedPrice());
-                    targetProductRepository.save(userTargetProduct);
-
-                    return "Target product replaced successfully";
-                }
+                return "Target product replaced successfully";
             }
         }
 
