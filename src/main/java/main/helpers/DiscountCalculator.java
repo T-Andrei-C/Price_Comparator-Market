@@ -7,6 +7,8 @@ import java.time.LocalDate;
 public class DiscountCalculator {
 
     public static Double applyDiscountToProductPrice (Double price, Double percentageOfDiscount) {
+        //ex. percentage = 20%, percentage to number = 0.2, then we find out the amount we want to keep
+        //of the price, 1 minus 0.2 = 0.8, which means we will be keeping 80% of the price
         return price * (1 - (percentageOfDiscount / 100));
     }
 
