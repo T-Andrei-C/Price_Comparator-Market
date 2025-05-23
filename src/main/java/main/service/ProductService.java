@@ -4,22 +4,19 @@ import lombok.RequiredArgsConstructor;
 import main.helpers.DiscountCalculator;
 import main.helpers.SimulateDate;
 import main.model.DTO.PriceHistoryDTO;
-import main.model.DTO.ProductHighestDiscountDTO;
+import main.model.DTO.ProductWithDiscountDTO;
 import main.model.DTO.ProductHistoryDTO;
 import main.model.Discount;
 import main.model.Product;
 import main.model.Supermarket;
-import main.model.SupermarketHistory;
 import main.repository.ProductRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,47 +24,43 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
-    public Set<ProductHighestDiscountDTO> displayHighestDiscountForProducts() {
+    public Set<ProductWithDiscountDTO> getAllProductsWithTheirBiggestDiscount() {
         List<Product> products = productRepository.findAll();
         LocalDate simulateDate = SimulateDate.getDate();
-        Set<ProductHighestDiscountDTO> productsHighestDiscount = new HashSet<>();
+        Set<ProductWithDiscountDTO> productsBiggestDiscount = new HashSet<>();
 
         for (Product product : products) {
-            List<Discount> highestDiscounts = new ArrayList<>();
+            List<Discount> biggestDiscounts = new ArrayList<>();
+
             for (Supermarket supermarket : product.getSupermarkets()) {
-                if (supermarket.getDiscount() == null || !checkIfDiscountsIsActive(supermarket.getDiscount(), simulateDate)) {
-                    break;
-                }
 
                 Discount discount = supermarket.getDiscount();
+                if (discount != null && DiscountCalculator.checkIfDiscountApplies(simulateDate, discount)) {
+                    //first check if the list with biggest discounts is empty and if it is we add the discount to the list
+                    if (!biggestDiscounts.isEmpty()) {
+                        Discount biggestDiscount = biggestDiscounts.getFirst();
 
-                if (!highestDiscounts.isEmpty()) {
-                    if (discount.getPercentage_of_discount() > highestDiscounts.getFirst().getPercentage_of_discount()) {
-                        highestDiscounts.clear();
-                        highestDiscounts.add(discount);
-                    } else if (discount.getPercentage_of_discount().equals(highestDiscounts.getFirst().getPercentage_of_discount())) {
-                        highestDiscounts.add(discount);
+                        //check if current discount is bigger than the one we added in the biggest discounts list
+                        //if is true, we empty the list and add the current discount
+                        if (discount.getPercentage_of_discount() > biggestDiscount.getPercentage_of_discount()) {
+                            biggestDiscounts.clear();
+                            biggestDiscounts.add(discount);
+                        } else if (discount.getPercentage_of_discount().equals(biggestDiscount.getPercentage_of_discount())) {
+                            //we add this one if the discount is equal to the one we have
+                            biggestDiscounts.add(discount);
+                        }
+                    } else {
+                        biggestDiscounts.add(discount);
                     }
-                } else {
-                    highestDiscounts.add(discount);
                 }
             }
 
-            for (Discount highestDiscount : highestDiscounts) {
-                productsHighestDiscount.add(
-                        ProductHighestDiscountDTO.builder()
-                                .product(product)
-                                .supermarket_name(highestDiscount.getSupermarket().getName())
-                                .product_price(highestDiscount.getSupermarket().getProduct_price())
-                                .percentage_of_discount(highestDiscount.getPercentage_of_discount())
-                                .product_price_with_discount(DiscountCalculator.applyDiscountToProductPrice(highestDiscount.getSupermarket().getProduct_price(), highestDiscount.getPercentage_of_discount()))
-                                .currency(highestDiscount.getSupermarket().getCurrency())
-                                .build()
-                );
+            for (Discount biggestDiscount : biggestDiscounts) {
+                createProductWithDiscount(productsBiggestDiscount, product, biggestDiscount);
             }
         }
 
-        return productsHighestDiscount;
+        return productsBiggestDiscount;
     }
 
     public Set<ProductHistoryDTO> getProductsPriceHistoryByBrand(String brand, LocalDate from, LocalDate to) {
@@ -88,7 +81,8 @@ public class ProductService {
         return createProductHistoryForEachProduct(tableProducts, from, to);
     }
 
-    public Set<ProductHistoryDTO> getProductsPriceHistoryBySupermarketName(String supermarketName, LocalDate from, LocalDate to) {
+    public Set<ProductHistoryDTO> getProductsPriceHistoryBySupermarketName(String supermarketName, LocalDate
+            from, LocalDate to) {
         List<Product> tableProducts = productRepository.findAll().stream()
                 .filter(product -> product.getSupermarkets().stream()
                         .anyMatch(supermarket -> supermarket.getName().equals(supermarketName))
@@ -107,7 +101,26 @@ public class ProductService {
         return createProductHistoryForEachProduct(tableProducts, from, to);
     }
 
-    private Set<ProductHistoryDTO> createProductHistoryForEachProduct(List<Product> tableProducts, LocalDate from, LocalDate to) {
+    private void createProductWithDiscount(Set<ProductWithDiscountDTO> productsBiggestDiscount, Product product, Discount biggestDiscount) {
+        Supermarket supermarket = biggestDiscount.getSupermarket();
+        Double discountPrice = DiscountCalculator.applyDiscountToProductPrice(
+                supermarket.getProduct_price(),
+                biggestDiscount.getPercentage_of_discount()
+        );
+
+        productsBiggestDiscount.add(ProductWithDiscountDTO.builder()
+                .product(product)
+                .supermarket_name(supermarket.getName())
+                .product_price(supermarket.getProduct_price())
+                .percentage_of_discount(biggestDiscount.getPercentage_of_discount())
+                .discount_price(discountPrice)
+                .currency(supermarket.getCurrency())
+                .build()
+        );
+    }
+
+    private Set<ProductHistoryDTO> createProductHistoryForEachProduct(List<Product> tableProducts, LocalDate
+            from, LocalDate to) {
 
         Set<ProductHistoryDTO> productsHistory = new HashSet<>();
 
@@ -119,7 +132,6 @@ public class ProductService {
                         .currency(supermarket.getCurrency())
                         .price_history(new ArrayList<>())
                         .build();
-
 
 
                 if (supermarket.getPublish_date().isBefore(to) || supermarket.getPublish_date().isEqual(to)) {
@@ -225,7 +237,8 @@ public class ProductService {
         return productsHistory;
     }
 
-    private void createPriceHistoryWithoutDiscount (ProductHistoryDTO productHistory, Supermarket supermarket, LocalDate from_date, LocalDate to_date) {
+    private void createPriceHistoryWithoutDiscount(ProductHistoryDTO productHistory, Supermarket
+            supermarket, LocalDate from_date, LocalDate to_date) {
         productHistory.getPrice_history().add(
                 PriceHistoryDTO.builder()
                         .from(from_date)
@@ -238,7 +251,8 @@ public class ProductService {
         );
     }
 
-    private void createPriceHistoryWithDiscount (ProductHistoryDTO productHistory, Supermarket supermarket, Discount discount, LocalDate from_date, LocalDate to_date) {
+    private void createPriceHistoryWithDiscount(ProductHistoryDTO productHistory, Supermarket supermarket, Discount
+            discount, LocalDate from_date, LocalDate to_date) {
         productHistory.getPrice_history().add(
                 PriceHistoryDTO.builder()
                         .from(from_date)
@@ -249,12 +263,5 @@ public class ProductService {
                         .percentage_of_discount(discount.getPercentage_of_discount())
                         .build()
         );
-    }
-
-    private boolean checkIfDiscountsIsActive(Discount discount, LocalDate simulateDate) {
-        return discount.getFrom_date().isEqual(simulateDate) ||
-                discount.getTo_date().isEqual(simulateDate) ||
-                simulateDate.isAfter(discount.getFrom_date()) ||
-                simulateDate.isBefore(discount.getTo_date());
     }
 }
