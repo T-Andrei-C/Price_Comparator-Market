@@ -37,7 +37,6 @@ public class CSVDiscountParserService {
     private final DiscountHistoryRepository discountHistoryRepository;
 
     public String uploadCSVFile(MultipartFile csvFile) throws IOException {
-
         try (Reader reader = new BufferedReader(new InputStreamReader(csvFile.getInputStream()))) {
 
             HeaderColumnNameMappingStrategy<DiscountCSVRepresentation> strategy = new HeaderColumnNameMappingStrategy<>();
@@ -76,58 +75,34 @@ public class CSVDiscountParserService {
             Set<Discount> newDiscounts = new HashSet<>();
 
             for (Discount discount : discounts) {
-                if (discount.getSupermarket().getDiscount() != null) {
-                    Discount tableDiscount = discountRepository.findById(discount.getSupermarket().getDiscount().getId()).orElse(null);
+                Discount tableDiscount = discount.getSupermarket().getDiscount();
 
-                    if (tableDiscount != null) {
+                if (tableDiscount != null) {
+                    //check if table discount doesn't overlap with the new discount
+                    if (tableDiscount.getFrom_date().isBefore(discount.getFrom_date()) &&
+                            (tableDiscount.getTo_date().isBefore(discount.getFrom_date()) ||
+                                    tableDiscount.getTo_date().isEqual(discount.getFrom_date()))
+                    ) {
+                        createDiscountHistory(tableDiscount, tableDiscount.getTo_date());
+                        updateDiscount(discount, tableDiscount);
 
-                        if (tableDiscount.getFrom_date().isBefore(discount.getFrom_date()) &&
-                                (tableDiscount.getTo_date().isBefore(discount.getFrom_date()) ||
-                                tableDiscount.getTo_date().isEqual(discount.getFrom_date()))
-                        ) {
-                            DiscountHistory discountHistory = DiscountHistory.builder()
-                                    .supermarket(tableDiscount.getSupermarket())
-                                    .from_date(tableDiscount.getFrom_date())
-                                    .to_date(tableDiscount.getTo_date())
-                                    .percentage_of_discount(tableDiscount.getPercentage_of_discount())
-                                    .build();
-
-                            tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
-                            tableDiscount.setFrom_date(discount.getFrom_date());
-                            tableDiscount.setTo_date(discount.getTo_date());
-
-                            discountRepository.save(tableDiscount);
-                            discountHistoryRepository.save(discountHistory);
-                        } else if (tableDiscount.getFrom_date().isBefore(discount.getFrom_date()) &&
-                                tableDiscount.getTo_date().isAfter(discount.getFrom_date()) &&
-                                (tableDiscount.getTo_date().isBefore(discount.getTo_date()) ||
-                                tableDiscount.getTo_date().isAfter(discount.getTo_date()) ||
-                                tableDiscount.getTo_date().isEqual(discount.getTo_date()))
-                        ) {
-                            DiscountHistory discountHistory = DiscountHistory.builder()
-                                    .supermarket(tableDiscount.getSupermarket())
-                                    .from_date(tableDiscount.getFrom_date())
-                                    .to_date(discount.getFrom_date())
-                                    .percentage_of_discount(tableDiscount.getPercentage_of_discount())
-                                    .build();
-
-                            tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
-                            tableDiscount.setFrom_date(discount.getFrom_date());
-                            tableDiscount.setTo_date(discount.getTo_date());
-
-                            discountRepository.save(tableDiscount);
-                            discountHistoryRepository.save(discountHistory);
-                        } else {
-                            tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
-                            tableDiscount.setFrom_date(discount.getFrom_date());
-                            tableDiscount.setTo_date(discount.getTo_date());
-
-                            discountRepository.save(tableDiscount);
-                        }
+                        //check if table discount overlaps with the to_date in between the from_date and to_date,
+                        //as well if is after or equal to the to_date of the discount we're adding
+                    } else if (tableDiscount.getFrom_date().isBefore(discount.getFrom_date()) &&
+                            tableDiscount.getTo_date().isAfter(discount.getFrom_date()) &&
+                            (tableDiscount.getTo_date().isBefore(discount.getTo_date()) ||
+                                    tableDiscount.getTo_date().isAfter(discount.getTo_date()) ||
+                                    tableDiscount.getTo_date().isEqual(discount.getTo_date()))
+                    ) {
+                        //this means the new discount cut the old discount shorter than the to_date it had
+                        //in this case, we will give the discount history the from_date of the new discount to the to_date
+                        createDiscountHistory(tableDiscount, discount.getFrom_date());
+                        updateDiscount(discount, tableDiscount);
 
                     } else {
-                        newDiscounts.add(discount);
+                        updateDiscount(discount, tableDiscount);
                     }
+
                 } else {
                     newDiscounts.add(discount);
                 }
@@ -136,6 +111,25 @@ public class CSVDiscountParserService {
             return newDiscounts;
         }
         return discounts;
+    }
+
+    private void createDiscountHistory(Discount tableDiscount, LocalDate toDate) {
+        DiscountHistory discountHistory = DiscountHistory.builder()
+                .supermarket(tableDiscount.getSupermarket())
+                .from_date(tableDiscount.getFrom_date())
+                .to_date(toDate)
+                .percentage_of_discount(tableDiscount.getPercentage_of_discount())
+                .build();
+
+        discountHistoryRepository.save(discountHistory);
+    }
+
+    private void updateDiscount(Discount discount, Discount tableDiscount) {
+        tableDiscount.setPercentage_of_discount(discount.getPercentage_of_discount());
+        tableDiscount.setFrom_date(discount.getFrom_date());
+        tableDiscount.setTo_date(discount.getTo_date());
+
+        discountRepository.save(tableDiscount);
     }
 
     private boolean verifyIfSupermarketExistsForDiscount(DiscountCSVRepresentation discountCSVRepresentation, String supermarketName) {
