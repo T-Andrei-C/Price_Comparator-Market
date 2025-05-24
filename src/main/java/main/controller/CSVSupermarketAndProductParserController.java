@@ -11,7 +11,7 @@ import java.io.IOException;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/price_comparator/api/v1/supermarket/csv")
-public class CSVSupermarketParserController {
+public class CSVSupermarketAndProductParserController {
 
     private final CSVSupermarketAndProductParserService CSVSupermarketAndProductParserService;
 
