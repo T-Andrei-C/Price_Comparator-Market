@@ -59,7 +59,7 @@ public class CSVSupermarketAndProductParserService {
                         .stream()
                         .map(products -> SupermarketCSVRepresentation.builder()
                                 .price(products.getPrice())
-                                .publish_date(CSVFileNameReader.getPublishDateName(csvFileName))
+                                .publish_date(CSVFileNameReader.getPublishDate(csvFileName))
                                 .name(products.getName())
                                 .supermarket_name(CSVFileNameReader.getSupermarketName(csvFileName))
                                 .unit(products.getUnit())
@@ -71,7 +71,7 @@ public class CSVSupermarketAndProductParserService {
                         ).collect(Collectors.toSet());
 
                 productRepository.saveAll(uploadProducts(productsRepresentation));
-                supermarketRepository.saveAll(testSupermarketUpload(productsRepresentation));
+                supermarketRepository.saveAll(uploadSupermarkets(productsRepresentation));
                 createNotificationIfPriceDroppedForTargetProduct();
 
                 return "Products and supermarkets added successfully";
@@ -102,7 +102,7 @@ public class CSVSupermarketAndProductParserService {
         return products;
     }
 
-    private Set<Supermarket> testSupermarketUpload(Set<SupermarketCSVRepresentation> supermarketCSVRepresentations) {
+    private Set<Supermarket> uploadSupermarkets(Set<SupermarketCSVRepresentation> supermarketCSVRepresentations) {
         Set<Supermarket> supermarkets = transformSupermarketCsvRepresentationIntoSupermarkets(supermarketCSVRepresentations);
         List<Supermarket> tableSupermarkets = supermarketRepository.findAll();
 

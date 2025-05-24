@@ -62,13 +62,13 @@ public class CSVDiscountParserService {
                             .build()
                     ).collect(Collectors.toSet());
 
-            discountRepository.saveAll(checkIfDiscountsInTable(discountSet));
+            discountRepository.saveAll(uploadDiscounts(discountSet));
         }
 
-        return "";
+        return "Discounts added successfully";
     }
 
-    private Set<Discount> checkIfDiscountsInTable(Set<Discount> discounts) {
+    private Set<Discount> uploadDiscounts(Set<Discount> discounts) {
         List<Discount> tableDiscounts = discountRepository.findAll();
 
         if (!tableDiscounts.isEmpty()) {

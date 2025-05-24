@@ -10,13 +10,13 @@ import main.model.Product;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductHighestDiscountDTO {
+public class ProductWithDiscountDTO {
     
     private Product product;
     private String supermarket_name;
     private Double percentage_of_discount;
     private Double product_price;
-    private Double product_price_with_discount;
+    private Double discount_price;
     private String currency;
 
 }

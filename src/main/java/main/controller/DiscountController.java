@@ -1,7 +1,7 @@
 package main.controller;
 
 import lombok.RequiredArgsConstructor;
-import main.model.DTO.ProductHighestDiscountDTO;
+import main.model.DTO.ProductWithDiscountDTO;
 import main.service.DiscountService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,7 +17,7 @@ public class DiscountController {
     private final DiscountService discountService;
 
     @GetMapping("/newest")
-    private Set<ProductHighestDiscountDTO> getNewestDiscounts () {
+    private Set<ProductWithDiscountDTO> getNewestDiscounts () {
         return discountService.getNewestDiscounts();
     }
 

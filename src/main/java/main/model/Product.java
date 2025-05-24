@@ -33,10 +33,6 @@ public class Product {
     @OneToMany(mappedBy = "product")
     private List<Supermarket> supermarkets;
 
-    @JsonIgnore
-    @OneToOne(mappedBy = "product")
-    private TargetProduct targetProduct;
-
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;

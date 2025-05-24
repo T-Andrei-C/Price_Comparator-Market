@@ -33,7 +33,7 @@ public class NotificationService {
         if (user != null) {
             Notification notification = notificationRepository.findById(notificationId).orElse(null);
             if (notification != null) {
-                notification.setSeen(notification.getSeen());
+                notification.setSeen(true);
                 notificationRepository.save(notification);
 
                 return "Notification saved successfully";

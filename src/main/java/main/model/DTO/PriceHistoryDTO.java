@@ -14,10 +14,10 @@ import java.time.LocalDate;
 public class PriceHistoryDTO {
 
     private Double product_price;
-    private LocalDate publish_date;
-    private boolean is_current;
-    private boolean had_discount;
+    private boolean has_discount;
     private Double discounted_price;
     private Double percentage_of_discount;
+    private LocalDate from;
+    private LocalDate to;
 
 }

@@ -3,9 +3,8 @@ package main.service;
 import lombok.RequiredArgsConstructor;
 import main.helpers.DiscountCalculator;
 import main.helpers.SimulateDate;
-import main.model.DTO.ProductHighestDiscountDTO;
+import main.model.DTO.ProductWithDiscountDTO;
 import main.model.Discount;
-import main.model.Product;
 import main.model.Supermarket;
 import main.repository.DiscountRepository;
 import org.springframework.stereotype.Service;
@@ -21,8 +20,8 @@ public class DiscountService {
 
     private final DiscountRepository discountRepository;
 
-    public Set<ProductHighestDiscountDTO> getNewestDiscounts () {
-        Set<ProductHighestDiscountDTO> newestDiscounts = new HashSet<>();
+    public Set<ProductWithDiscountDTO> getNewestDiscounts () {
+        Set<ProductWithDiscountDTO> newestDiscounts = new HashSet<>();
         LocalDate simulateDate = SimulateDate.getDate();
 
         Set<Discount> discounts = discountRepository.findAll().stream()
@@ -33,12 +32,12 @@ public class DiscountService {
             Supermarket discountSupermarket = discount.getSupermarket();
 
             newestDiscounts.add(
-                    ProductHighestDiscountDTO.builder()
+                    ProductWithDiscountDTO.builder()
                             .product(discountSupermarket.getProduct())
                             .supermarket_name(discountSupermarket.getName())
                             .product_price(discountSupermarket.getProduct_price())
                             .percentage_of_discount(discount.getPercentage_of_discount())
-                            .product_price_with_discount(DiscountCalculator.applyDiscountToProductPrice(discountSupermarket.getProduct_price(), discount.getPercentage_of_discount()))
+                            .discount_price(DiscountCalculator.applyDiscountToProductPrice(discountSupermarket.getProduct_price(), discount.getPercentage_of_discount()))
                             .currency(discountSupermarket.getCurrency())
                             .build()
             );

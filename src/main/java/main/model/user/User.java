@@ -28,9 +28,6 @@ public class User {
     @OneToOne(cascade = CascadeType.ALL)
     private Basket basket;
 
-    @OneToOne(mappedBy = "user")
-    private TargetProduct targetProduct;
-
     @OneToMany(mappedBy = "user")
     private List<Notification> notifications;
 }
