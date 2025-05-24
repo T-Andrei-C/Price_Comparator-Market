@@ -16,7 +16,7 @@ Price-Comparator Market is an application used by users to compare prices of man
 Copy the project's SSH and clone it locally
 
 ### .env file
-In order for the project to work, we need to first configure the .env file
+In order for the project to work, we need to first configure the .env file\
 Go to src/main/resources -> rename the .env.example file to .env -> fill in the variables with the information requested 
 
 ## Starting the application
