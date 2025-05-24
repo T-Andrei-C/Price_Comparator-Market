@@ -43,8 +43,8 @@ I decided to separate the code in 4 big parts:
 ## How to use the implemented features
 I recommand using Postman; I attached bellow a postman link with all the requests available. 
   - For the csv files, at body, choose form-data and name the key "file" as well as choosing File from the dropdown
-  - For the end points that require PathVariables, make sure the ids relate to the entity in the database
-I also attached a video showcasing all the endpoints being used
+  - For the end points that require PathVariables, make sure the ids relate to the entity in the database\
+I attached a video showcasing all the endpoints being used
 
 ### Video showcase
 https://streamable.com/m3oi7l
