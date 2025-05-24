@@ -22,6 +22,9 @@ Go to src/main/resources -> rename the .env.example file to .env -> fill in the 
 ### Starting the application
 Go to PriceComparatorMarketApp.class and run the application
 
+### Video showcase
+https://streamable.com/m3oi7l
+
 ### Simulate date
 You can change the date in the SimulateDate helper class for different results
 
