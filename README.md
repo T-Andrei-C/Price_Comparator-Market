@@ -33,12 +33,12 @@ I decided to separate the code in 4 big parts:
 4. Models:
   - DTOs: used for choosing what data to expose to the API
   - Representations: as the name says, these classes will represent the data that comes from the CSV files
-  - The reset of the classes: used as structures for the database entity
+  - The rest of the classes: used as structures for the database entity
 
 ## Assumptions
 - For the Custom Price Alert I decided to go with a notification system. A user can choose one product and a price for it and when that product gets a lower price or equal to the desired price, it will create a notification in the database which will be seen by the user whenever he visits the application/site again.
 - For the Dynamic Price History Graphs, I had the idea in my head, but it got very complicated and complex, which might be due to me either understanding the task incorrectly or the way I choose to store the prices and discounts a supermarket had. I choose to only filter the products by brand, category and supermarket name, which is not much of what was asked
-- I made the assumption that the date from the csv file is the publish date of the supermarkets/products
+- I made the assumption that the date from the csv file is the publish date of the supermarkets/products, not to the database, but at that date, the supermarkets have those products at that price 
 
 ## How to use the implemented features
 I recommand using Postman; I attached bellow a postman link with all the requests available. 
